@@ -2,7 +2,7 @@ import ply.lex as lex
 import ply.yacc as yacc
 import re
 
-tokens = ['semi_bond','semi_symbol', 'digit', 'organic_symbol']
+tokens = ['semi_bond','semi_symbol', 'digit', 'semi_organic_symbol']
 
 import json
 import re
@@ -20,14 +20,14 @@ def gera_regex_de_lista(lista:list[str]) -> str:
     return '|'.join(elementos_em_re)
 
 
-atomos_organicos = ["H","N","O","P","S","F","Cl","Br","I", "C"] # direto do artigo, tem mais?
-atomos_inorganicos = list(set(tp.keys()) - set(atomos_organicos))
+atomos_organicos = ["N","O","P","S","F","Cl","Br","I", "C"] # direto do artigo, tem mais?
+atomos_inorganicos = list(set(tp.keys()) - set(atomos_organicos) - set("H"))
 
 literals = [".","@","-","+",":","%","H",")","(","]","[", 'H']
 
 bonds = ["=", "#", "$", "/", "\\"]
 
-t_organic_symbol = rf'{gera_regex_de_lista(atomos_organicos)}'
+t_semi_organic_symbol = rf'{gera_regex_de_lista(atomos_organicos)}'
 t_semi_symbol = rf'{gera_regex_de_lista(atomos_inorganicos)}'
 t_semi_bond = rf'{gera_regex_de_lista(bonds)}'
 t_digit = r'\d'
@@ -126,18 +126,21 @@ def p_opt_charge(p):
     opt_charge : charge
                | empty
     """
+    pass
 
 def p_opt_map(p):
     """
     opt_map : map
             | empty
     """
+    p[0] = p[1]
     
 def p_opt_digit(p):
     """
     opt_digit : digit
               | empty
     """
+    p[0] = p[1]
 
 def p_bond(p):
     """
@@ -146,13 +149,20 @@ def p_bond(p):
     """
     p[0] = p[1]
 
-def p_semi_symbols(p):
+def p_symbols(p):
     """
     symbol : semi_symbol
-            | 'H'
+            | organic_symbol
     """
-    
+
     p[0] = p[1]
+    
+def p_organic_symbol(p):
+    """
+    organic_symbol : 'H'
+                   | semi_organic_symbol
+    """
+    pass
 
 def p_atom(p):
     """
@@ -166,7 +176,7 @@ def p_bracket_atom(p):
     """
     bracket_atom : '[' opt_isotope symbol opt_chiral opt_hcount opt_charge opt_map ']'
     """
-    
+    print(list(p))
     pass
 
 def p_rnum(p):
@@ -187,6 +197,7 @@ def p_hcount(p):
     hcount : 'H' opt_digit
     """
     pass
+
 
 def p_charge(p):
     """
@@ -227,4 +238,4 @@ def p_error(regras):
     print("Erro de sintaxe"+ str(regras))
 
 parser = yacc.yacc(debug=True)
-parser.parse("Br(Cl)")
+parser.parse("[AuH2]")
